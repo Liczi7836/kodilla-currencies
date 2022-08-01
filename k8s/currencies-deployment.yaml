@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: currencies-app
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: currencies-app
+  replicas: 1
+  template:
+    metadata:
+      name: currencies-app
+      labels:
+        app: currencies-app
+    spec:
+      containers:
+        - name: currencies-app
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: memory-postgres-config
+                  key: postgres_user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: memory-postgres-secret
+                  key: password
+            - name: POSTGRES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: memory-hostname-config
+                  key: postgres_host
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: memory-postgres-config
+                  key: postgres_db
+            - name: POSTGRES_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: memory-postgres-config
+                  key: postgres_port
+          image: mps4dev/currencies:1.0

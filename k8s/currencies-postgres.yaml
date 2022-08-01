@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: currencies-postgres-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 16Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: currencies-postgres
+spec:
+  selector:
+    matchLabels:
+      app: currencies-postgres
+  template:
+    metadata:
+      labels:
+        app: currencies-postgres
+    spec:
+      volumes:
+        - name: currencies-postgres-storage
+          persistentVolumeClaim:
+            claimName: currencies-postgres-pvc
+      containers:
+        - image: library/postgres:9.6
+          name: currencies-postgres
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: memory-postgres-config
+                  key: postgres_user
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: currencies-postgres-secret
+                  key: password
+            - name: POSTGRES_DB
+              valueFrom:
+                configMapKeyRef:
+                  name: currencies-postgres-config
+                  key: postgres_db
+            - name: POSTGRES_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: currencies-postgres-config
+                  key: postgres_port
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          ports:
+            - containerPort: 5432
+              name: currencies-postgres
+          volumeMounts:
+            - name: currencies-postgres-storage
+              mountPath: /var/lib/postgresql/data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: currencies-postgres
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+  selector:
+    app: currencies-postgres
